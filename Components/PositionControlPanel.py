@@ -35,6 +35,7 @@ class PositionControlPanel(ctk.CTkFrame):
         on_preview: Optional[Callable[[RobotPosition], None]] = None,
         on_home: Optional[Callable[[RobotPosition], None]] = None,
         on_set_pose: Optional[Callable[[RobotPosition], None]] = None,
+        on_add_to_sequence: Optional[Callable[[RobotPosition], None]] = None,
         width: int = 320,
         **kwargs
     ):
@@ -44,6 +45,7 @@ class PositionControlPanel(ctk.CTkFrame):
         self.on_preview = on_preview
         self.on_home = on_home
         self.on_set_pose = on_set_pose
+        self.on_add_to_sequence = None  # callable(pose_or_wait_dict)
 
         self._results: List[RobotPosition] = []
         self._selected: Optional[RobotPosition] = None
@@ -106,25 +108,39 @@ class PositionControlPanel(ctk.CTkFrame):
             val_lbl.grid(row=i + 1, column=1, sticky="e", pady=1)
             self._joint_value_labels.append(val_lbl)
 
+        # Wait input row (above buttons)
+        self.wait_row = ctk.CTkFrame(self, fg_color="transparent")
+        self.wait_row.grid(row=4, column=0, sticky="ew", padx=12, pady=(0, 8))
+        self.wait_row.grid_columnconfigure(0, weight=1)
+
+        self.wait_seconds_var = ctk.StringVar(value="1.0")
+        self.wait_entry = ctk.CTkEntry(
+            self.wait_row,
+            textvariable=self.wait_seconds_var,
+            placeholder_text="Wait seconds (e.g., 0.5)"
+        )
+        self.wait_entry.grid(row=0, column=0, sticky="ew")
+
         # Buttons row
         self.buttons = ctk.CTkFrame(self, fg_color="transparent")
-        self.buttons.grid(row=4, column=0, sticky="ew", padx=12, pady=(0, 12))
-        for c in range(3):
+        self.buttons.grid(row=5, column=0, sticky="ew", padx=12, pady=(0, 12))
+        for c in range(4):
             self.buttons.grid_columnconfigure(c, weight=1)
 
         self.btn_preview = ctk.CTkButton(self.buttons, text="Preview", command=self._preview_clicked, state="disabled")
         self.btn_preview.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
-        self.home_button = ctk.CTkButton(
-            self.buttons,
-            text="Home",
-            command=self._home_clicked
-        )
+        # Rename Reset -> Home (text only, keep handler name if you want)
+        self.btn_home = ctk.CTkButton(self.buttons, text="Home", command=self._home_clicked)
+        self.btn_home.grid(row=0, column=1, sticky="ew", padx=(0, 8))
 
-        self.home_button.grid(row=0, column=1, sticky="ew", padx=(0, 8))
+        self.btn_set_pose = ctk.CTkButton(self.buttons, text="Set Pose", command=self._set_pose_clicked,
+                                          state="disabled")
+        self.btn_set_pose.grid(row=0, column=2, sticky="ew", padx=(0, 8))
 
-        self.btn_set_pose = ctk.CTkButton(self.buttons, text="Set Pose", command=self._set_pose_clicked, state="disabled")
-        self.btn_set_pose.grid(row=0, column=2, sticky="ew")
+        self.btn_add_seq = ctk.CTkButton(self.buttons, text="Add to sequence", command=self._add_to_sequence_clicked,
+                                         state="disabled")
+        self.btn_add_seq.grid(row=0, column=3, sticky="ew")
 
         # Initial load
         self.refresh_results("")
@@ -152,6 +168,8 @@ class PositionControlPanel(ctk.CTkFrame):
             v.configure(text="—")
         self.btn_preview.configure(state="disabled")
         self.btn_set_pose.configure(state="disabled")
+        self.btn_add_seq.configure(state="disabled")
+
 
     def get_selected_pose(self) -> Optional[RobotPosition]:
         return self._selected
@@ -194,18 +212,49 @@ class PositionControlPanel(ctk.CTkFrame):
 
         self.btn_preview.configure(state="normal")
         self.btn_set_pose.configure(state="normal")
+        self.btn_add_seq.configure(state="normal")
 
     # ---------------- Button handlers (placeholders) ----------------
     def _preview_clicked(self):
         if self._selected and self.on_preview:
             self.on_preview(self._selected)
-
-    def _home_clicked(self):
-        print("clicked")
-        if self.on_home:
-            self.on_home()
-
     def _set_pose_clicked(self):
         if self._selected and self.on_set_pose:
             print(self._selected)
             self.on_set_pose(self._selected)
+
+    def _home_clicked(self):
+        if getattr(self, "on_home", None):
+            self.on_home()
+
+    def _add_to_sequence_clicked(self):
+        """
+        Adds either:
+          - selected pose block
+          - OR a wait block if no pose selected? (MVP: require pose selected for pose blocks)
+        Here: if pose selected -> add pose block; also supports adding wait by typing seconds and pressing add (optional).
+        """
+        if self.on_add_to_sequence is None:
+            return
+
+        # If a pose is selected, add that pose as a block
+        if self._selected is not None:
+            pose = self._selected
+            self.on_add_to_sequence({
+                "type": "pose",
+                "id": pose.id,
+                "name": pose.name,
+                "joints": [pose.j_base, pose.j_bottom, pose.j_2, pose.j_3, pose.j_4, pose.j_gripper],
+            })
+            return
+
+        # Otherwise add wait (not typical, but supported)
+        sec = self._parse_wait_seconds()
+        self.on_add_to_sequence({"type": "wait", "seconds": sec})
+
+    def _parse_wait_seconds(self) -> float:
+        try:
+            return float(self.wait_seconds_var.get().strip())
+        except Exception:
+            return 1.0
+

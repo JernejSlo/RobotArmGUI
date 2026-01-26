@@ -9,6 +9,9 @@ class RobotArm:
         self.baudrate = baudrate
         self.terminal = terminal
         self.running = False
+        self.ack_event = threading.Event()
+        self.last_ack_line = ""
+        self._ack_lock = threading.Lock()
 
         try:
             self.ser = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=1)
@@ -44,9 +47,29 @@ class RobotArm:
             except Exception as e:
                 print(f"[RobotArm] Read error: {e}")
 
-    def handle_receive(self,line):
+    def handle_receive(self, line: str):
+        if self.terminal:
+            self.terminal.log(line)
 
-        self.terminal.log(line)
+        s = line.strip()
+
+        # ACK when command is received/parsed
+        if s.startswith("Received:"):
+            with self._ack_lock:
+                self.last_ack_line = s
+            self.ack_event.set()
+            return
+
+        # Optional future: DONE completion
+        if s.upper() == "DONE":
+            with self._ack_lock:
+                self.last_ack_line = s
+            self.ack_event.set()
+
+    def wait_for_ack(self, timeout_s: float = 2.0) -> bool:
+        self.ack_event.clear()
+        return self.ack_event.wait(timeout=timeout_s)
+
     def process_ai_guided_frame(self, frame):
         """
         Placeholder function for AI-guided robot vision.

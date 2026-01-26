@@ -8,7 +8,8 @@ from PIL import Image, ImageTk
 
 from Components.MovementSimulation import ArmSimulationView, DH
 import numpy as np
-
+from Components.PositionControlPanel import PositionControlPanel
+from Components.SequenceProgramPanel import SequenceProgramPanel
 
 class ValueDisplay(customtkinter.CTkFrame):
     """Robot guidance control area with visual display and sliders + teach/save UI."""
@@ -16,10 +17,14 @@ class ValueDisplay(customtkinter.CTkFrame):
     def __init__(self, parent, running,db=None):
         super().__init__(parent, fg_color=COLORS["backgroundLight"])
 
+        self.db = db
+
         # 2-column layout: left (visual + joint controls), right (position control placeholder)
         self.grid(row=1, column=1, padx=(20, 20), pady=(10, 80), sticky="nsew")
         self.grid_columnconfigure(0, weight=3)  # left
-        self.grid_columnconfigure(1, weight=1)  # right
+        self.grid_columnconfigure(1, weight=1)  # position panel
+        self.grid_columnconfigure(2, weight=1)  # sequence panel
+
         self.grid_rowconfigure(0, weight=1)
 
         # =========================
@@ -107,17 +112,16 @@ class ValueDisplay(customtkinter.CTkFrame):
         # =========================
         # RIGHT SIDE
         # =========================
-        self.position_panel = PositionControlPanel(
-            self,
-            db=db,  # pass the RobotPositionsDB from your app
-            on_preview=None,
-            on_home=None,
-            on_set_pose=None,
-        )
+        self.position_panel = PositionControlPanel(self, db=db, on_preview=None, on_home=None, on_set_pose=None,
+                                                   on_add_to_sequence=None)
         self.position_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0), pady=10)
+
+        self.sequence_panel = SequenceProgramPanel(self)
+        self.sequence_panel.grid(row=0, column=2, sticky="nsew", padx=(10, 10), pady=10)
 
         # Camera stuff (unchanged)
         self.camera_active = False
+
 
     # -----------------------------
     # Wiring callbacks (App provides these)

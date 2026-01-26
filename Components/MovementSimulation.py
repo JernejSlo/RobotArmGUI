@@ -281,6 +281,14 @@ class ArmSimulationView(BaseFrame):
         if redraw:
             self._redraw_all()
 
+    def _clear_tool_artists(self):
+        for a in self._tool_artists:
+            try:
+                a.remove()
+            except Exception:
+                pass
+        self._tool_artists.clear()
+
     def clear_preview(self, redraw: bool = True):
         self.preview_angles = None
         if redraw:
@@ -675,6 +683,7 @@ class ArmSimulationView(BaseFrame):
         # Clear old drawings
         self._clear_artists(self._real_artists)
         self._clear_artists(self._preview_artists)
+        self._clear_tool_artists()  # <<< ADD THIS
 
         # --- Real arm ---
         Ts_real = self._fk_chain(self.joint_angles)
