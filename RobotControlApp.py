@@ -64,8 +64,14 @@ class RobotControlApp(customtkinter.CTk,GenerationAndDisplayUtils):
 
         # === Sidebar container (inside paned window) ===
         self.sidebar_container = customtkinter.CTkFrame(self.paned, corner_radius=0)
-        self.sidebar = Sidebar(self.sidebar_container, self.update_title, self.change_scaling,
-                               self.show_settings)
+        self.sidebar = Sidebar(
+            self.sidebar_container,
+            self.update_title,
+            self.change_scaling,
+            self.show_settings,
+            self.reconnect_robot  # NEW
+        )
+
         self.sidebar.pack(fill="both", expand=True)
         self.paned.add(self.sidebar_container, minsize=140)
 
@@ -156,6 +162,21 @@ class RobotControlApp(customtkinter.CTk,GenerationAndDisplayUtils):
 
         self.home_pose()
         #self.show_com_port_popup()
+
+    def reconnect_robot(self):
+
+
+        try:
+            # Close existing connection if present
+            if self.robot_arm.ser and self.robot_arm.ser.is_open:
+                self.robot_arm.ser.close()
+                self.terminal.log("Closed existing serial connection.")
+
+            # Reconnect
+            self.robot_arm.connect()
+
+        except Exception as e:
+            self.terminal.log(f"Reconnect failed: {e}")
 
     def simulate_sequence(self, blocks):
         """Animate the PREVIEW arm through the sequence. No serial, no sliders."""

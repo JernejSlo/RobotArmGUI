@@ -3,8 +3,9 @@ from Utils.color_theme import COLORS
 
 
 class Sidebar(customtkinter.CTkFrame):
-    """ Sidebar with control buttons and UI options """
-    def __init__(self, parent, mode_callback, scaling_callback, settings_callback):
+    def __init__(self, parent, mode_callback, scaling_callback, settings_callback, reconnect_callback):
+        self.reconnect_callback = reconnect_callback
+
         self.default_color = COLORS["backgroundLight"]
         self.active_button_color = "#103857"  # Slightly darker than default blue
         self.hover_color = COLORS["hover"]
@@ -44,6 +45,16 @@ class Sidebar(customtkinter.CTkFrame):
 
         self.settings_button = customtkinter.CTkButton(self, text="Settings", command=settings_callback)
         self.settings_button.grid(row=row_index, column=0, padx=20, pady=(10, 10))
+        row_index += 1
+
+        self.reconnect_button = customtkinter.CTkButton(
+            self,
+            text="Reconnect",
+            command=self.reconnect_callback,
+            fg_color="#2b5a2b",
+            hover_color="#3a7a3a",
+        )
+        self.reconnect_button.grid(row=row_index, column=0, padx=20, pady=(5, 10))
         row_index += 1
 
         # Defaults

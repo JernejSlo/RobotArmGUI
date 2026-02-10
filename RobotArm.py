@@ -17,13 +17,37 @@ class RobotArm:
             self.ser = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=1)
             time.sleep(2)
             print(f"[RobotArm] Connected to {self.port}")
+            terminal.log(f"[RobotArm] Connected to  {self.port}")
         except serial.SerialException as e:
             print(f"[RobotArm] Serial error: {e}")
+            terminal.log(f"[RobotArm] Serial error: {e}")
             return
 
+        self.terminal = terminal
         self.running = True
         self.read_thread = threading.Thread(target=self.read_loop, daemon=True)
         self.read_thread.start()
+
+    def connect(self, baudrate=115200, timeout=1):
+        import serial
+
+        try:
+            if self.ser and self.ser.is_open:
+                self.ser.close()
+                self.terminal.log("Closed existing serial connection.")
+
+            self.ser = serial.Serial(
+                port=self.port,
+                baudrate=baudrate,
+                timeout=timeout
+            )
+
+            self.terminal.log(f"Connected to robot on {self.port}")
+
+        except Exception as e:
+            self.ser = None
+            self.terminal.log(f"Failed to connect to {self.port}: {e}")
+            raise
 
     def send_command(self, cmd: str):
         if self.ser and self.ser.is_open:

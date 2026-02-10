@@ -101,7 +101,7 @@ class ValueDisplay(customtkinter.CTkFrame):
         # ===== Simulator =====
         self.dh = [
             DH(a=0.0, alpha=np.deg2rad(90), d=0.0725, theta_offset=0.0),
-            DH(a=0.185, alpha=np.deg2rad(0), d=0.0, theta_offset=np.deg2rad(-20)),
+            DH(a=0.185, alpha=np.deg2rad(0), d=0.0, theta_offset=np.deg2rad(-50)),
             DH(a=0.1175, alpha=np.deg2rad(180), d=0.0, theta_offset=np.deg2rad(-120)),
             DH(a=0.08, alpha=np.deg2rad(0), d=0.0, theta_offset=np.deg2rad(-60)),
         ]
