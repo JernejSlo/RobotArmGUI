@@ -804,7 +804,7 @@ class RobotControlApp(customtkinter.CTk,GenerationAndDisplayUtils):
             names = ["Joint 1", "Joint 2", "Joint 3", "Joint 4", "Gripper Roll", "Gripper Open"]
             ranges = [(30, 180)] * 6
             ranges[0] = (0, 360)
-            ranges[-1] = (70, 100)
+            ranges[-1] = (70, 100) # TODO
 
             self.upper_panel.value_display.create_value_labels(names)
 
